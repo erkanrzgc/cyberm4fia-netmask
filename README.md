@@ -4,7 +4,6 @@
   <img src="https://img.shields.io/badge/mission-identity%20rotation%20daemon-red?style=for-the-badge" alt="mission">
 </p>
 
-<table align="center"><tr><td>
 <pre>
  ██████╗██╗   ██╗██████╗ ███████╗██████╗ ███╗   ███╗██╗  ██╗███████╗██╗ █████╗
 ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗████╗ ████║██║  ██║██╔════╝██║██╔══██╗
@@ -12,9 +11,7 @@
 ██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗██║╚██╔╝██║╚════██║██╔══╝  ██║██╔══██║
 ╚██████╗   ██║   ██████╔╝███████╗██║  ██║██║ ╚═╝ ██║     ██║██║     ██║██║  ██║
  ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝
-                // NETMASK // MAC/IP CHANGER // DAEMON //
 </pre>
-</td></tr></table>
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.6+-blue?style=flat-square&logo=python" alt="python">
