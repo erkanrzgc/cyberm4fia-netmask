@@ -1,7 +1,7 @@
 """Platform-aware configuration constants and paths."""
 
 import os
-from utils.platform import get_os
+from src.utils.platform import get_os
 
 APP_NAME = "cyberm4fia"
 APP_DIR = ".config"

@@ -4,7 +4,7 @@ import re
 import random
 import ipaddress
 
-from config import MAC_PATTERN
+from src.config import MAC_PATTERN
 
 
 def is_valid_mac(mac):

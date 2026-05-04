@@ -1,9 +1,9 @@
 """Linux MAC/IP changer using ip link/addr and dhclient."""
 
 import time
-from changers.base import AbstractChanger
-from utils.platform import run_command
-from validator import mask_to_cidr
+from src.changers.base import AbstractChanger
+from src.utils.platform import run_command
+from src.validator import mask_to_cidr
 
 
 class LinuxChanger(AbstractChanger):

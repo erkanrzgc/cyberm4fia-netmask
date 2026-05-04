@@ -7,12 +7,12 @@ import signal
 import atexit
 from datetime import datetime, timedelta
 
-from config import CONFIG_DIR, PID_FILE, LOG_FILE, DURATION_FILE, MIN_INTERVAL
-from interfaces import Interface
-from changers import Changer
-from backup import BackupManager
-from validator import random_mac, random_private_ip, format_duration
-from utils.platform import get_os, run_command
+from src.config import CONFIG_DIR, PID_FILE, LOG_FILE, DURATION_FILE, MIN_INTERVAL
+from src.interfaces import Interface
+from src.changers import Changer
+from src.backup import BackupManager
+from src.validator import random_mac, random_private_ip, format_duration
+from src.utils.platform import get_os, run_command
 
 
 class Daemon:
@@ -188,7 +188,7 @@ class Daemon:
             )
             time.sleep(0.3)
 
-            from validator import mask_to_cidr
+            from src.validator import mask_to_cidr
             cidr = mask_to_cidr(netmask)
             run_command(["ip", "addr", "flush", "dev", self.interface], check=False)
             time.sleep(0.3)
@@ -239,7 +239,7 @@ class Daemon:
 
     def _run_anti_forensics(self):
         """Execute anti-forensics suite after successful rotation."""
-        from antiforensics import flush_dns, flush_arp, randomize_hostname
+        from src.antiforensics import flush_dns, flush_arp, randomize_hostname
         try:
             flush_dns()
             flush_arp()
@@ -275,7 +275,7 @@ class Daemon:
                 time.sleep(0.3)
 
                 if original.get("ip") and original.get("ip") != "N/A":
-                    from validator import mask_to_cidr
+                    from src.validator import mask_to_cidr
                     ip = original["ip"].split("/")[0] if "/" in original["ip"] else original["ip"]
                     netmask = original.get("netmask", "255.255.255.0")
                     cidr = mask_to_cidr(netmask)
@@ -484,5 +484,5 @@ def daemon_stop():
 
 def require_admin():
     """Local admin check for daemon context."""
-    from utils.platform import require_admin as _ra
+    from src.utils.platform import require_admin as _ra
     _ra()

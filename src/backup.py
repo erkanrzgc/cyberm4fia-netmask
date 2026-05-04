@@ -3,7 +3,7 @@
 import os
 import json
 from datetime import datetime
-from config import CONFIG_DIR, BACKUP_FILE
+from src.config import CONFIG_DIR, BACKUP_FILE
 
 
 class BackupManager:

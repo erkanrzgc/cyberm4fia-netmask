@@ -2,17 +2,17 @@
 
 import os
 import sys
-from config import BOX_H, BOX_V, BOX_TL, BOX_TR, BOX_BL, BOX_BR
-from config import BOX_TJ, BOX_BJ, BOX_LJ, BOX_RJ, BOX_CJ
-from banner import print_banner
-from interfaces import Interface
-from changers import Changer
-from backup import BackupManager
-from validator import (
+from src.config import BOX_H, BOX_V, BOX_TL, BOX_TR, BOX_BL, BOX_BR
+from src.config import BOX_TJ, BOX_BJ, BOX_LJ, BOX_RJ, BOX_CJ
+from src.banner import print_banner
+from src.interfaces import Interface
+from src.changers import Changer
+from src.backup import BackupManager
+from src.validator import (
     is_valid_mac, is_valid_ip, is_valid_netmask,
     random_mac, random_private_ip, is_unicast,
 )
-from utils.platform import get_os
+from src.utils.platform import get_os
 
 
 class InteractiveMenu:
@@ -343,7 +343,7 @@ class InteractiveMenu:
 
     def _start_daemon(self, interface):
         """Prompt and start daemon mode."""
-        from validator import parse_duration, format_duration
+        from src.validator import parse_duration, format_duration
 
         print()
         print(f"  --- Start Daemon on {interface} ---")
@@ -379,7 +379,7 @@ class InteractiveMenu:
         if confirm != "y":
             return
 
-        from daemon import Daemon
+        from src.daemon import Daemon
         daemon = Daemon(interface, interval, duration,
                         kill_switch=ks, anti_forensics=af)
         daemon.start()

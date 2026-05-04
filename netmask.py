@@ -13,16 +13,16 @@ import sys
 import os
 import argparse
 
-from utils.platform import require_admin
-from banner import print_banner
-from interfaces import Interface
-from changers import Changer
-from backup import BackupManager
-from validator import (
+from src.utils.platform import require_admin
+from src.banner import print_banner
+from src.interfaces import Interface
+from src.changers import Changer
+from src.backup import BackupManager
+from src.validator import (
     is_valid_mac, is_valid_ip, random_mac, random_private_ip,
     is_unicast, mask_to_cidr, parse_duration,
 )
-from config import DEFAULT_INTERVAL, DEFAULT_NETMASK, MIN_INTERVAL
+from src.config import DEFAULT_INTERVAL, DEFAULT_NETMASK, MIN_INTERVAL
 
 
 def parse_args():
@@ -117,19 +117,19 @@ def run_cli(args):
     # Daemon management commands (can run without -i)
     if args.status:
         print_banner()
-        from daemon import daemon_status
+        from src.daemon import daemon_status
         daemon_status()
         return
 
     if args.stop:
         print_banner()
-        from daemon import daemon_stop
+        from src.daemon import daemon_stop
         daemon_stop()
         return
 
     # Internal daemon spawn (hidden, runs the actual daemon loop)
     if args._internal_daemon:
-        from daemon import Daemon
+        from src.daemon import Daemon
         duration = 0
         if args.duration:
             try:
@@ -151,7 +151,7 @@ def run_cli(args):
 
     # Daemon start
     if args.daemon:
-        from daemon import Daemon
+        from src.daemon import Daemon
         duration = 0
         if args.duration:
             try:
@@ -270,7 +270,7 @@ def main():
     if not has_cli_action:
         # Interactive mode
         require_admin()
-        from menu import InteractiveMenu
+        from src.menu import InteractiveMenu
         menu = InteractiveMenu()
         menu.run()
     else:

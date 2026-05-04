@@ -2,8 +2,8 @@
 
 import time
 import re
-from changers.base import AbstractChanger
-from utils.platform import run_command
+from src.changers.base import AbstractChanger
+from src.utils.platform import run_command
 
 
 class WindowsChanger(AbstractChanger):
