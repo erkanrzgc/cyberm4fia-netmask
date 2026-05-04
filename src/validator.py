@@ -43,9 +43,20 @@ def is_valid_ip(ip):
 def is_valid_netmask(mask):
     """Check if a string is a valid subnet mask."""
     try:
-        ipaddress.IPv4Network(f"0.0.0.0/{mask_to_cidr(mask)}")
+        mask = str(mask)
+        octets = mask.split(".")
+        if len(octets) != 4:
+            return False
+        for octet in octets:
+            val = int(octet)
+            if val < 0 or val > 255:
+                return False
+        cidr = mask_to_cidr(mask)
+        ipaddress.IPv4Network(f"0.0.0.0/{cidr}")
         return True
     except (ipaddress.AddressValueError, ValueError):
+        return False
+    except Exception:
         return False
 
 
@@ -55,7 +66,14 @@ def mask_to_cidr(mask):
         try:
             return int(mask)
         except (ValueError, TypeError):
-            return sum(bin(int(octet)).count("1") for octet in mask.split("."))
+            octets = mask.split(".")
+            if len(octets) != 4:
+                return 24
+            for octet in octets:
+                val = int(octet)
+                if val < 0 or val > 255:
+                    return 24
+            return sum(bin(int(o)).count("1") for o in octets)
     except Exception:
         return 24
 
