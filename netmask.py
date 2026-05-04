@@ -20,7 +20,7 @@ from netmask.changers import Changer
 from netmask.backup import BackupManager
 from netmask.validator import (
     is_valid_mac, is_valid_ip, random_mac, random_private_ip,
-    is_unicast, mask_to_cidr,
+    is_unicast, mask_to_cidr, parse_duration,
 )
 from netmask.config import DEFAULT_INTERVAL, DEFAULT_NETMASK, MIN_INTERVAL
 
@@ -83,6 +83,10 @@ def parse_args():
         help=f"Rotation interval in seconds (min {MIN_INTERVAL}, default: {DEFAULT_INTERVAL})",
     )
     daemon_group.add_argument(
+        "-d", "--duration",
+        help="Total run duration (30s, 5m, 2h, 1h30m). After expiry, auto-stop and restore.",
+    )
+    daemon_group.add_argument(
         "--status", action="store_true",
         help="Show daemon status",
     )
@@ -118,7 +122,14 @@ def run_cli(args):
     # Internal daemon spawn (hidden, runs the actual daemon loop)
     if args._internal_daemon:
         from netmask.daemon import Daemon
-        daemon = Daemon(args.interface, args.interval)
+        duration = 0
+        if args.duration:
+            try:
+                duration = parse_duration(args.duration)
+            except ValueError as e:
+                print(f"[-] {e}")
+                sys.exit(1)
+        daemon = Daemon(args.interface, args.interval, duration)
         daemon._run_loop()
         return
 
@@ -131,7 +142,14 @@ def run_cli(args):
     # Daemon start
     if args.daemon:
         from netmask.daemon import Daemon
-        daemon = Daemon(args.interface, args.interval)
+        duration = 0
+        if args.duration:
+            try:
+                duration = parse_duration(args.duration)
+            except ValueError as e:
+                print(f"[-] {e}")
+                sys.exit(1)
+        daemon = Daemon(args.interface, args.interval, duration)
         daemon.start()
         return
 

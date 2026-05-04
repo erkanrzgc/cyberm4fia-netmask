@@ -16,6 +16,7 @@ else:
 BACKUP_FILE = os.path.join(CONFIG_DIR, "backup.json")
 PID_FILE = os.path.join(CONFIG_DIR, "netmask.pid")
 LOG_FILE = os.path.join(CONFIG_DIR, "netmask.log")
+DURATION_FILE = os.path.join(CONFIG_DIR, "netmask.duration")
 
 DEFAULT_INTERVAL = 30
 MIN_INTERVAL = 10

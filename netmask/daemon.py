@@ -7,11 +7,11 @@ import signal
 import atexit
 from datetime import datetime, timedelta
 
-from netmask.config import CONFIG_DIR, PID_FILE, LOG_FILE, MIN_INTERVAL
+from netmask.config import CONFIG_DIR, PID_FILE, LOG_FILE, DURATION_FILE, MIN_INTERVAL
 from netmask.interfaces import Interface
 from netmask.changers import Changer
 from netmask.backup import BackupManager
-from netmask.validator import random_mac, random_private_ip
+from netmask.validator import random_mac, random_private_ip, format_duration
 from netmask.utils.platform import get_os, run_command
 
 
@@ -21,16 +21,17 @@ class Daemon:
     On Linux: uses double-fork for proper daemonization.
     On Windows: runs as a detached background process.
 
-    On shutdown (SIGTERM/SIGINT), restores original MAC/IP.
+    On shutdown (SIGTERM/SIGINT) or duration expiry, restores original MAC/IP.
     """
 
-    def __init__(self, interface, interval=30):
+    def __init__(self, interface, interval=30, duration=0):
         self.interface = interface
         self.interval = max(interval, MIN_INTERVAL)
+        self.duration = duration
         self.iface = Interface()
         self.changer = Changer()
         self.backup = BackupManager()
-        self.started_at = datetime.now()
+        self.started_at = None
         self.rotations = 0
         self._running = False
         self._shutting_down = False
@@ -45,6 +46,11 @@ class Daemon:
         original_netmask = self.iface.get_netmask(self.interface)
 
         self.backup.save(self.interface, original_mac, original_ip, original_netmask)
+        self.started_at = datetime.now()
+
+        # Write duration to a marker file so child process can read it
+        if self.duration > 0:
+            self._write_duration(self.duration)
 
         if get_os() == "linux":
             self._daemonize_linux()
@@ -61,6 +67,8 @@ class Daemon:
             print(f"[+] Daemon started (PID: {pid})")
             print(f"[+] Interface: {self.interface}")
             print(f"[+] Interval: {self.interval}s")
+            if self.duration > 0:
+                print(f"[+] Duration: {format_duration(self.duration)}")
             print(f"[+] Log: {LOG_FILE}")
             print(f"[+] Run 'netmask.py --stop' to terminate")
             self._write_pid(pid)
@@ -86,6 +94,8 @@ class Daemon:
             "--daemon", "-i", self.interface, "-t", str(self.interval),
             "--_internal-daemon",
         ]
+        if self.duration > 0:
+            args += ["-d", str(self.duration)]
 
         proc = sp.Popen(
             args,
@@ -98,6 +108,8 @@ class Daemon:
         print(f"[+] Daemon started (PID: {proc.pid})")
         print(f"[+] Interface: {self.interface}")
         print(f"[+] Interval: {self.interval}s")
+        if self.duration > 0:
+            print(f"[+] Duration: {format_duration(self.duration)}")
         print(f"[+] Log: {LOG_FILE}")
         print(f"[+] Run 'netmask.py --stop' to terminate")
         self._write_pid(proc.pid)
@@ -111,8 +123,14 @@ class Daemon:
 
         self._write_pid(os.getpid())
         self._running = True
+        self.started_at = datetime.now()
+
+        # Read duration from file (set by parent process)
+        self.duration = self._read_duration()
 
         self._log("Daemon started")
+        if self.duration > 0:
+            self._log(f"Duration set: {format_duration(self.duration)}")
 
         try:
             while not self._shutting_down:
@@ -123,6 +141,15 @@ class Daemon:
                     f"MAC: {self.iface.get_mac(self.interface)}, "
                     f"IP: {self.iface.get_ip(self.interface)}"
                 )
+
+                if self.duration > 0:
+                    elapsed = (datetime.now() - self.started_at).total_seconds()
+                    remaining = self.duration - elapsed
+                    if remaining <= 0:
+                        self._log("Duration expired, shutting down...")
+                        self._shutting_down = True
+                        break
+
                 time.sleep(self.interval)
         except Exception as e:
             self._log(f"Error: {e}")
@@ -221,6 +248,24 @@ class Daemon:
         except (IOError, OSError):
             pass
 
+    def _write_duration(self, duration_seconds):
+        """Write duration to a marker file for the child process."""
+        self._ensure_dirs()
+        with open(DURATION_FILE, "w") as f:
+            f.write(str(int(duration_seconds)))
+
+    def _read_duration(self):
+        """Read duration from marker file, then remove it."""
+        try:
+            if os.path.exists(DURATION_FILE):
+                with open(DURATION_FILE) as f:
+                    duration = int(f.read().strip())
+                os.remove(DURATION_FILE)
+                return duration
+        except (ValueError, IOError):
+            pass
+        return 0
+
     def _log(self, message):
         """Write timestamped log entry."""
         self._ensure_dirs()
@@ -318,6 +363,8 @@ def daemon_status():
         ("PID", str(pid)),
         ("Interface", iface_name),
         ("Interval", "N/A"),
+        ("Duration", "N/A"),
+        ("Remaining", "N/A"),
         ("Uptime", uptime_str),
         ("Started", started_at),
         ("Rotations", str(rotations)),

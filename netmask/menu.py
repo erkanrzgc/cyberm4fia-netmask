@@ -343,6 +343,8 @@ class InteractiveMenu:
 
     def _start_daemon(self, interface):
         """Prompt and start daemon mode."""
+        from netmask.validator import parse_duration, format_duration
+
         print()
         print(f"  --- Start Daemon on {interface} ---")
         try:
@@ -351,12 +353,25 @@ class InteractiveMenu:
             interval = 30
         interval = max(interval, 10)
 
+        print(f"  Duration (e.g. 30s, 5m, 2h) or leave blank for indefinite: ", end="")
+        dur_input = input().strip()
+        duration = 0
+        dur_str = "indefinite"
+        if dur_input:
+            try:
+                duration = parse_duration(dur_input)
+                dur_str = format_duration(duration)
+            except ValueError:
+                print(f"  [-] Invalid duration, using indefinite")
+                dur_input = ""
+
         print(f"\n  [+] Daemon will rotate MAC+IP every {interval}s")
+        print(f"  [+] Duration: {dur_str}")
         print(f"  [+] Safe shutdown restores original settings")
         confirm = input("  Start daemon? [\033[32my\033[0m/N]: ").strip().lower()
         if confirm != "y":
             return
 
         from netmask.daemon import Daemon
-        daemon = Daemon(interface, interval)
+        daemon = Daemon(interface, interval, duration)
         daemon.start()

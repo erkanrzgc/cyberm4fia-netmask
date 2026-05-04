@@ -100,3 +100,66 @@ def format_mac(mac, style="colon"):
         return mac
     sep = ":" if style == "colon" else "-"
     return sep.join(clean[i : i + 2].lower() for i in range(0, 12, 2))
+
+
+def parse_duration(value):
+    """Parse a human-readable duration string to total seconds.
+
+    Supports formats: '30s', '5m', '2h', '1h30m', '90m', '1h 30m', '30'.
+    Returns total seconds as int, or raises ValueError.
+    """
+    if not value:
+        raise ValueError("Duration must not be empty")
+
+    if isinstance(value, (int, float)):
+        return max(1, int(value))
+
+    value = str(value).strip().lower().replace(" ", "")
+
+    if value.isdigit():
+        return int(value)
+
+    total = 0
+    buf = ""
+
+    for char in value:
+        if char in "smhd":
+            try:
+                num = int(buf) if buf else 0
+            except ValueError:
+                raise ValueError(f"Invalid duration: {value}")
+            if char == "s":
+                total += num
+            elif char == "m":
+                total += num * 60
+            elif char == "h":
+                total += num * 3600
+            elif char == "d":
+                total += num * 86400
+            buf = ""
+        elif char.isdigit():
+            buf += char
+        else:
+            raise ValueError(f"Invalid duration: {value}")
+
+    if total <= 0:
+        raise ValueError(f"Duration must be positive: {value}")
+    return total
+
+
+def format_duration(seconds):
+    """Convert seconds to human-readable duration string."""
+    if seconds < 60:
+        return f"{seconds}s"
+    elif seconds < 3600:
+        m, s = divmod(seconds, 60)
+        return f"{m}m{s}s" if s else f"{m}m"
+    else:
+        h, rem = divmod(seconds, 3600)
+        m, s = divmod(rem, 60)
+        parts = f"{h}h"
+        if m:
+            parts += f"{m}m"
+        if s:
+            parts += f"{s}s"
+        return parts
