@@ -7,12 +7,12 @@ import signal
 import atexit
 from datetime import datetime, timedelta
 
-from netmask.config import CONFIG_DIR, PID_FILE, LOG_FILE, DURATION_FILE, MIN_INTERVAL
-from netmask.interfaces import Interface
-from netmask.changers import Changer
-from netmask.backup import BackupManager
-from netmask.validator import random_mac, random_private_ip, format_duration
-from netmask.utils.platform import get_os, run_command
+from config import CONFIG_DIR, PID_FILE, LOG_FILE, DURATION_FILE, MIN_INTERVAL
+from interfaces import Interface
+from changers import Changer
+from backup import BackupManager
+from validator import random_mac, random_private_ip, format_duration
+from utils.platform import get_os, run_command
 
 
 class Daemon:
@@ -24,10 +24,13 @@ class Daemon:
     On shutdown (SIGTERM/SIGINT) or duration expiry, restores original MAC/IP.
     """
 
-    def __init__(self, interface, interval=30, duration=0):
+    def __init__(self, interface, interval=30, duration=0,
+                 kill_switch=False, anti_forensics=False):
         self.interface = interface
         self.interval = max(interval, MIN_INTERVAL)
         self.duration = duration
+        self.kill_switch = kill_switch
+        self.anti_forensics = anti_forensics
         self.iface = Interface()
         self.changer = Changer()
         self.backup = BackupManager()
@@ -35,6 +38,7 @@ class Daemon:
         self.rotations = 0
         self._running = False
         self._shutting_down = False
+        self._ks_active = False
 
     def start(self):
         """Start the daemon process."""
@@ -96,6 +100,10 @@ class Daemon:
         ]
         if self.duration > 0:
             args += ["-d", str(self.duration)]
+        if self.kill_switch:
+            args.append("-ks")
+        if self.anti_forensics:
+            args.append("-af")
 
         proc = sp.Popen(
             args,
@@ -157,7 +165,7 @@ class Daemon:
         self._cleanup()
 
     def _rotate(self):
-        """Perform one MAC + IP rotation cycle."""
+        """Perform one MAC + IP rotation cycle with optional kill switch + anti-forensics."""
         mac = random_mac()
         ip = random_private_ip()
 
@@ -168,6 +176,9 @@ class Daemon:
         netmask = backup_data.get("netmask", "255.255.255.0") if backup_data else "255.255.255.0"
 
         try:
+            if self.kill_switch:
+                self._ks_block()
+
             self.changer.disable_interface(self.interface)
             time.sleep(0.3)
 
@@ -177,7 +188,7 @@ class Daemon:
             )
             time.sleep(0.3)
 
-            from netmask.validator import mask_to_cidr
+            from validator import mask_to_cidr
             cidr = mask_to_cidr(netmask)
             run_command(["ip", "addr", "flush", "dev", self.interface], check=False)
             time.sleep(0.3)
@@ -189,8 +200,53 @@ class Daemon:
 
             self.changer.enable_interface(self.interface)
             time.sleep(1)
+
+            if self.kill_switch:
+                self._ks_unblock()
+
+            if self.anti_forensics:
+                self._run_anti_forensics()
+
         except Exception as e:
             self._log(f"Rotation error: {e}")
+            if self.kill_switch:
+                self._log("KILL SWITCH: rotation failed, network remains blocked")
+                self._shutting_down = True
+
+    def _ks_block(self):
+        """Kill switch: block all traffic on this interface via iptables."""
+        self._ks_active = True
+        run_command(
+            ["iptables", "-I", "OUTPUT", "-o", self.interface, "-j", "DROP"],
+            check=False,
+        )
+        run_command(
+            ["iptables", "-I", "INPUT", "-i", self.interface, "-j", "DROP"],
+            check=False,
+        )
+
+    def _ks_unblock(self):
+        """Kill switch: remove the DROP rules for this interface."""
+        run_command(
+            ["iptables", "-D", "OUTPUT", "-o", self.interface, "-j", "DROP"],
+            check=False,
+        )
+        run_command(
+            ["iptables", "-D", "INPUT", "-i", self.interface, "-j", "DROP"],
+            check=False,
+        )
+        self._ks_active = False
+
+    def _run_anti_forensics(self):
+        """Execute anti-forensics suite after successful rotation."""
+        from antiforensics import flush_dns, flush_arp, randomize_hostname
+        try:
+            flush_dns()
+            flush_arp()
+            hostname = randomize_hostname()
+            self._log(f"Anti-forensics: DNS flushed, ARP flushed, hostname={hostname}")
+        except Exception as e:
+            self._log(f"Anti-forensics error: {e}")
 
     def _handle_shutdown(self, signum, frame):
         """Handle shutdown signals — restore original settings."""
@@ -198,7 +254,12 @@ class Daemon:
         self._shutting_down = True
 
     def _cleanup(self):
-        """Restore original MAC/IP and remove PID file."""
+        """Restore original MAC/IP, remove kill switch rules, and remove PID file."""
+        # Remove kill switch rules first
+        if self._ks_active:
+            self._ks_unblock()
+            self._log("Kill switch: rules removed")
+
         try:
             original = self.backup.load(self.interface)
             if original:
@@ -214,7 +275,7 @@ class Daemon:
                 time.sleep(0.3)
 
                 if original.get("ip") and original.get("ip") != "N/A":
-                    from netmask.validator import mask_to_cidr
+                    from validator import mask_to_cidr
                     ip = original["ip"].split("/")[0] if "/" in original["ip"] else original["ip"]
                     netmask = original.get("netmask", "255.255.255.0")
                     cidr = mask_to_cidr(netmask)
@@ -423,5 +484,5 @@ def daemon_stop():
 
 def require_admin():
     """Local admin check for daemon context."""
-    from netmask.utils.platform import require_admin as _ra
+    from utils.platform import require_admin as _ra
     _ra()

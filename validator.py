@@ -4,7 +4,7 @@ import re
 import random
 import ipaddress
 
-from netmask.config import MAC_PATTERN
+from config import MAC_PATTERN
 
 
 def is_valid_mac(mac):

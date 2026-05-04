@@ -3,7 +3,7 @@
 import os
 import json
 from datetime import datetime
-from netmask.config import CONFIG_DIR, BACKUP_FILE
+from config import CONFIG_DIR, BACKUP_FILE
 
 
 class BackupManager:

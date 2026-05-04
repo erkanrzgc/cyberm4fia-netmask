@@ -2,8 +2,8 @@
 
 import os
 import re
-from netmask.interfaces.base import AbstractInterface
-from netmask.utils.platform import run_command
+from interfaces.base import AbstractInterface
+from utils.platform import run_command
 
 
 class LinuxInterface(AbstractInterface):

@@ -2,8 +2,8 @@
 
 import time
 import re
-from netmask.changers.base import AbstractChanger
-from netmask.utils.platform import run_command
+from changers.base import AbstractChanger
+from utils.platform import run_command
 
 
 class WindowsChanger(AbstractChanger):

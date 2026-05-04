@@ -1,8 +1,8 @@
 """Windows interface discovery via netsh and WMI."""
 
 import re
-from netmask.interfaces.base import AbstractInterface
-from netmask.utils.platform import run_command
+from interfaces.base import AbstractInterface
+from utils.platform import run_command
 
 
 class WindowsInterface(AbstractInterface):

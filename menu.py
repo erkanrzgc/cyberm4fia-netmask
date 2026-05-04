@@ -2,17 +2,17 @@
 
 import os
 import sys
-from netmask.config import BOX_H, BOX_V, BOX_TL, BOX_TR, BOX_BL, BOX_BR
-from netmask.config import BOX_TJ, BOX_BJ, BOX_LJ, BOX_RJ, BOX_CJ
-from netmask.banner import print_banner
-from netmask.interfaces import Interface
-from netmask.changers import Changer
-from netmask.backup import BackupManager
-from netmask.validator import (
+from config import BOX_H, BOX_V, BOX_TL, BOX_TR, BOX_BL, BOX_BR
+from config import BOX_TJ, BOX_BJ, BOX_LJ, BOX_RJ, BOX_CJ
+from banner import print_banner
+from interfaces import Interface
+from changers import Changer
+from backup import BackupManager
+from validator import (
     is_valid_mac, is_valid_ip, is_valid_netmask,
     random_mac, random_private_ip, is_unicast,
 )
-from netmask.utils.platform import get_os
+from utils.platform import get_os
 
 
 class InteractiveMenu:
@@ -343,7 +343,7 @@ class InteractiveMenu:
 
     def _start_daemon(self, interface):
         """Prompt and start daemon mode."""
-        from netmask.validator import parse_duration, format_duration
+        from validator import parse_duration, format_duration
 
         print()
         print(f"  --- Start Daemon on {interface} ---")
@@ -365,13 +365,21 @@ class InteractiveMenu:
                 print(f"  [-] Invalid duration, using indefinite")
                 dur_input = ""
 
+        ks = input("  Kill switch? Block network during rotation [y/N]: ").strip().lower() == "y"
+        af = input("  Anti-forensics? Flush DNS/ARP + randomize hostname [y/N]: ").strip().lower() == "y"
+
         print(f"\n  [+] Daemon will rotate MAC+IP every {interval}s")
         print(f"  [+] Duration: {dur_str}")
+        if ks:
+            print(f"  [+] Kill switch: \033[31mENABLED\033[0m")
+        if af:
+            print(f"  [+] Anti-forensics: \033[36mENABLED\033[0m")
         print(f"  [+] Safe shutdown restores original settings")
         confirm = input("  Start daemon? [\033[32my\033[0m/N]: ").strip().lower()
         if confirm != "y":
             return
 
-        from netmask.daemon import Daemon
-        daemon = Daemon(interface, interval, duration)
+        from daemon import Daemon
+        daemon = Daemon(interface, interval, duration,
+                        kill_switch=ks, anti_forensics=af)
         daemon.start()
