@@ -8,11 +8,11 @@ import atexit
 from datetime import datetime, timedelta
 
 from src.config import CONFIG_DIR, PID_FILE, LOG_FILE, DURATION_FILE, MIN_INTERVAL
-from src.interfaces import Interface
-from src.changers import Changer
+from interfaces import Interface
+from changers import Changer
 from src.backup import BackupManager
 from src.validator import random_mac, random_private_ip, format_duration
-from src.utils.platform import get_os, run_command
+from utils.platform import get_os, run_command
 
 
 class Daemon:
@@ -484,5 +484,5 @@ def daemon_stop():
 
 def require_admin():
     """Local admin check for daemon context."""
-    from src.utils.platform import require_admin as _ra
+    from utils.platform import require_admin as _ra
     _ra()

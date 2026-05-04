@@ -13,10 +13,10 @@ import sys
 import os
 import argparse
 
-from src.utils.platform import require_admin
+from utils.platform import require_admin
 from src.banner import print_banner
-from src.interfaces import Interface
-from src.changers import Changer
+from interfaces import Interface
+from changers import Changer
 from src.backup import BackupManager
 from src.validator import (
     is_valid_mac, is_valid_ip, random_mac, random_private_ip,

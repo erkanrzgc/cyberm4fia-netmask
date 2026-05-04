@@ -2,8 +2,8 @@
 
 import os
 import re
-from src.interfaces.base import AbstractInterface
-from src.utils.platform import run_command
+from interfaces.base import AbstractInterface
+from utils.platform import run_command
 
 
 class LinuxInterface(AbstractInterface):

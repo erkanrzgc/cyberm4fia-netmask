@@ -7,7 +7,7 @@ persist across MAC/IP changes and defeat the purpose of identity rotation.
 import os
 import random
 import string
-from src.utils.platform import get_os, run_command
+from utils.platform import get_os, run_command
 
 
 def flush_dns():
